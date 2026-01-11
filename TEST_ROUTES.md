@@ -192,6 +192,14 @@ curl -X DELETE http://localhost:3000/api/posts/UUID_HERE \
 
 ## 📄 Pages - Pages du Site
 
+### GET /api/pages
+**Accès :** Public
+
+**Test :**
+```bash
+curl -X GET http://localhost:3000/api/pages
+```
+
 ### GET /api/pages/:slug
 **Accès :** Public  
 **Slugs disponibles :** `home`, `about`, `services`, `contact`
@@ -202,6 +210,32 @@ curl -X GET http://localhost:3000/api/pages/home
 curl -X GET http://localhost:3000/api/pages/about
 curl -X GET http://localhost:3000/api/pages/services
 curl -X GET http://localhost:3000/api/pages/contact
+```
+
+### POST /api/pages
+**Accès :** Admin (JWT requis)  
+**Body :**
+```json
+{
+  "slug": "home",
+  "content_fr": "Nouveau contenu français...",
+  "content_en": "New English content...",
+  "content_es": "Nuevo contenido español...",
+  "image": "https://example.com/image.jpg"
+}
+```
+
+**Test :**
+```bash
+curl -X POST http://localhost:3000/api/pages \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "slug": "home",
+    "content_fr": "Nouveau contenu",
+    "content_en": "New content",
+    "content_es": "Nuevo contenido"
+  }'
 ```
 
 ### PUT /api/pages/:slug
@@ -226,6 +260,15 @@ curl -X PUT http://localhost:3000/api/pages/home \
     "content_en": "New content",
     "content_es": "Nuevo contenido"
   }'
+```
+
+### DELETE /api/pages/:slug
+**Accès :** Admin (JWT requis)
+
+**Test :**
+```bash
+curl -X DELETE http://localhost:3000/api/pages/home \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ---

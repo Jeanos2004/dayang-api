@@ -281,10 +281,24 @@ src/
 
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
+| GET | `/api/pages` | Liste de toutes les pages | Public |
 | GET | `/api/pages/:slug` | Contenu d'une page | Public |
+| POST | `/api/pages` | Créer une nouvelle page | Admin |
 | PUT | `/api/pages/:slug` | Modifier une page | Admin |
+| DELETE | `/api/pages/:slug` | Supprimer une page | Admin |
 
 **Slugs disponibles** : `home`, `about`, `services`, `contact`
+
+**Body (Create Page)**
+```json
+{
+  "slug": "home",
+  "content_fr": "Contenu français...",
+  "content_en": "English content...",
+  "content_es": "Contenido español...",
+  "image": "https://example.com/image.jpg"
+}
+```
 
 **Body (Update Page)**
 ```json
