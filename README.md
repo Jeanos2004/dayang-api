@@ -130,7 +130,8 @@ npm run seed:data
 DB_DATABASE=database.sqlite
 
 # JWT
-JWT_SECRET=your-super-secret-key-change-in-production
+# Générer une clé sécurisée avec : npm run generate:jwt-secret
+JWT_SECRET=your-super-secret-key-change-in-production-minimum-64-characters
 JWT_EXPIRES_IN=7d
 
 # Admin par défaut (pour seed)

@@ -2,6 +2,53 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DataSource } from 'typeorm';
+import { Admin } from './auth/entities/admin.entity';
+import { Post } from './posts/entities/post.entity';
+import { Page } from './pages/entities/page.entity';
+import { Message } from './messages/entities/message.entity';
+import { Setting } from './settings/entities/setting.entity';
+import { ConfigService } from '@nestjs/config';
+
+async function initializeDatabase(app: any) {
+  const configService = app.get(ConfigService);
+  
+  try {
+    const dataSource = new DataSource({
+      type: 'better-sqlite3',
+      database: configService.get('DB_DATABASE', 'database.sqlite'),
+      entities: [Admin, Post, Page, Message, Setting],
+      synchronize: true,
+    });
+
+    await dataSource.initialize();
+    console.log('✅ Base de données initialisée');
+
+    // Créer l'admin s'il n'existe pas
+    const adminRepository = dataSource.getRepository(Admin);
+    const adminEmail = configService.get('ADMIN_EMAIL', 'admin@example.com');
+    const adminPassword = configService.get('ADMIN_PASSWORD', 'changeme123');
+
+    const existingAdmin = await adminRepository.findOne({
+      where: { email: adminEmail },
+    });
+
+    if (!existingAdmin) {
+      const hashedPassword = await Admin.hashPassword(adminPassword);
+      const admin = adminRepository.create({
+        email: adminEmail,
+        password: hashedPassword,
+      });
+      await adminRepository.save(admin);
+      console.log(`✅ Admin créé: ${adminEmail}`);
+    }
+
+    await dataSource.destroy();
+  } catch (error) {
+    console.error('⚠️  Erreur lors de l\'initialisation de la base de données:', error.message);
+    // Ne pas bloquer le démarrage, TypeORM va gérer la synchronisation
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -54,6 +101,9 @@ async function bootstrap() {
     customfavIcon: 'https://nestjs.com/img/logo-small.svg',
     customCss: '.swagger-ui .topbar { display: none }',
   });
+
+  // Initialiser la base de données au démarrage
+  await initializeDatabase(app);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

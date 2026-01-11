@@ -164,12 +164,37 @@ DB_DATABASE=votre-database
 
 ### Générer un JWT_SECRET sécurisé :
 
+**Méthode 1 : Utiliser le script du projet (Recommandé)**
 ```bash
-# Linux/Mac
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Ou utiliser un générateur en ligne
+npm run generate:jwt-secret
 ```
+
+**Méthode 2 : Commande Node.js directe**
+```bash
+# Windows PowerShell
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Linux/Mac
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+**Méthode 3 : En ligne de commande OpenSSL**
+```bash
+# Windows (si OpenSSL installé)
+openssl rand -hex 64
+
+# Linux/Mac
+openssl rand -hex 64
+```
+
+**Méthode 4 : Générateur en ligne**
+- Visitez : https://generate-secret.vercel.app/64
+- Ou : https://www.allkeysgenerator.com/Random/Security-Encryption-Key-Generator.aspx
+
+**Important :**
+- Utilisez au minimum 32 caractères (64 bytes = 512 bits recommandé)
+- Ne partagez JAMAIS cette clé
+- Utilisez une clé différente pour chaque environnement (dev, staging, prod)
 
 ---
 
@@ -252,19 +277,45 @@ PGDATABASE
 
 ## 🆘 Dépannage
 
+### Erreur "no such table: admins" ou tables manquantes
+
+**Problème :** La base de données SQLite est créée mais les tables n'existent pas.
+
+**Solution :** L'application initialise maintenant automatiquement la base de données au démarrage. Si le problème persiste :
+
+1. **Vérifier que `synchronize: true` est activé** dans `app.module.ts` (déjà fait)
+2. **Redémarrer le service Railway** pour que l'initialisation se fasse
+3. **Vérifier les logs Railway** pour voir si l'initialisation s'est bien passée
+
+**Logs attendus au démarrage :**
+```
+✅ Base de données initialisée
+✅ Admin créé: admin@dayang.com
+🚀 Application is running on: http://localhost:3000/api
+```
+
 ### L'application ne démarre pas
-- Vérifier les logs dans Railway
-- Vérifier que le PORT est bien configuré
+- Vérifier les logs dans Railway (Dashboard → Service → Deployments → Logs)
+- Vérifier que le PORT est bien configuré (Railway le définit automatiquement)
 - Vérifier que `start:prod` fonctionne localement
+- Vérifier que toutes les variables d'environnement sont définies
 
 ### Erreur de base de données
 - Vérifier les variables d'environnement
-- Pour SQLite, vérifier les permissions d'écriture
-- Considérer PostgreSQL pour production
+- Pour SQLite sur Railway, la base est créée automatiquement
+- Considérer PostgreSQL pour production (plus fiable)
+- Vérifier les logs pour voir les erreurs SQL
 
 ### Erreur 404
 - Vérifier que le préfixe `/api` est bien configuré
 - Vérifier que les routes sont bien exposées
+- Tester avec `/api/docs` pour voir si Swagger fonctionne
+
+### Erreur 500 au login / L'admin n'existe pas
+- L'application crée automatiquement l'admin au démarrage
+- Vérifier que `ADMIN_EMAIL` et `ADMIN_PASSWORD` sont bien définis dans Railway
+- Vérifier les logs pour voir si l'admin a été créé
+- Si nécessaire, redémarrer le service Railway
 
 ---
 

@@ -26,7 +26,7 @@ import { Setting } from './settings/entities/setting.entity';
         type: 'better-sqlite3',
         database: configService.get('DB_DATABASE', 'database.sqlite'),
         entities: [Admin, Post, Page, Message, Setting],
-        synchronize: configService.get('NODE_ENV') !== 'production',
+        synchronize: true, // Active en production pour créer les tables automatiquement
         logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
