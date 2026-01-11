@@ -183,10 +183,13 @@ async function seedData() {
 
   // Seed Settings
   const settingRepository = dataSource.getRepository(Setting);
-  let settings = await settingRepository.findOne({ order: { created_at: 'DESC' } });
+  const existingSettings = await settingRepository.find({
+    order: { created_at: 'DESC' },
+    take: 1,
+  });
 
-  if (!settings) {
-    settings = settingRepository.create({
+  if (existingSettings.length === 0) {
+    const settings = settingRepository.create({
       site_name: 'Dayang Transport',
       logo: 'https://images.unsplash.com/photo-1601581875036-c75eb341dbe6?w=200',
       email: 'contact@dayang.com',
@@ -198,7 +201,7 @@ async function seedData() {
         instagram: 'https://instagram.com/dayang',
       },
     });
-    settings = await settingRepository.save(settings);
+    await settingRepository.save(settings);
     console.log('✅ Paramètres créés');
   } else {
     console.log('ℹ️  Paramètres existent déjà');
