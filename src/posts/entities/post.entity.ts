@@ -8,25 +8,25 @@ export enum PostStatus {
 
 @Entity('posts')
 export class Post extends BaseEntity {
-  @Column()
+  @Column({ nullable: true })
   title_fr: string;
 
-  @Column()
+  @Column({ nullable: true })
   title_en: string;
 
-  @Column()
+  @Column({ nullable: true })
   title_es: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   content_fr: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   content_en: string;
 
-  @Column('text')
+  @Column('text', { nullable: true })
   content_es: string;
 
-  @Column({ nullable: true })
+  @Column()
   image: string;
 
   @Column({ default: false })

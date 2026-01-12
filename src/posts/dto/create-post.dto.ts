@@ -11,60 +11,61 @@ import { PostStatus } from '../entities/post.entity';
 
 export class CreatePostDto {
   @ApiProperty({
+    description: 'URL de l\'image (obligatoire)',
+    example: 'https://example.com/image.jpg',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @IsUrl()
+  image: string;
+
+  @ApiPropertyOptional({
     description: 'Titre en français',
     example: 'Nouveau service de transport',
   })
   @IsString()
-  @IsNotEmpty()
-  title_fr: string;
+  @IsOptional()
+  title_fr?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Titre en anglais',
     example: 'New transport service',
   })
   @IsString()
-  @IsNotEmpty()
-  title_en: string;
+  @IsOptional()
+  title_en?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Titre en espagnol',
     example: 'Nuevo servicio de transporte',
   })
   @IsString()
-  @IsNotEmpty()
-  title_es: string;
+  @IsOptional()
+  title_es?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Contenu en français',
     example: 'Découvrez notre nouveau service...',
   })
   @IsString()
-  @IsNotEmpty()
-  content_fr: string;
+  @IsOptional()
+  content_fr?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Contenu en anglais',
     example: 'Discover our new service...',
   })
   @IsString()
-  @IsNotEmpty()
-  content_en: string;
+  @IsOptional()
+  content_en?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Contenu en espagnol',
     example: 'Descubre nuestro nuevo servicio...',
   })
   @IsString()
-  @IsNotEmpty()
-  content_es: string;
-
-  @ApiPropertyOptional({
-    description: 'URL de l\'image',
-    example: 'https://example.com/image.jpg',
-  })
-  @IsUrl()
   @IsOptional()
-  image?: string;
+  content_es?: string;
 
   @ApiPropertyOptional({
     description: 'Afficher dans le carousel',
