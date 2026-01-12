@@ -44,7 +44,14 @@ import { Setting } from './settings/entities/setting.entity';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         // Support de DATABASE_URL (Railway utilise parfois ce format)
-        const databaseUrl = configService.get('DATABASE_URL') || process.env.DATABASE_URL;
+        // Railway résout automatiquement ${{ Postgres.DATABASE_URL }} en vraie URL
+        let databaseUrl = configService.get('DATABASE_URL') || process.env.DATABASE_URL;
+        
+        // Ignorer si DATABASE_URL contient encore la référence Railway non résolue
+        if (databaseUrl && databaseUrl.includes('${{')) {
+          console.warn('⚠️  DATABASE_URL contient une référence Railway non résolue, ignorée');
+          databaseUrl = null;
+        }
         
         // Support des variables PostgreSQL séparées
         let pgHost = configService.get('PGHOST');
@@ -57,39 +64,50 @@ import { Setting } from './settings/entities/setting.entity';
         if (databaseUrl && databaseUrl.startsWith('postgres')) {
           try {
             const url = new URL(databaseUrl);
-            pgHost = url.hostname;
+            const parsedHost = url.hostname;
             const parsedUser = url.username;
             const parsedPassword = url.password;
             const parsedPort = url.port || '5432';
             const parsedDatabase = url.pathname.slice(1); // Enlever le / au début
             
-            console.log('📊 DATABASE_URL détectée, parsing...');
+            // Vérifier si le host est invalide (pointant vers le service web)
+            const isInvalidDbUrlHost = parsedHost.includes('web.railway.internal') || parsedHost.includes('localhost');
             
-            const config = {
-              type: 'postgres' as const,
-              host: pgHost,
-              port: parseInt(parsedPort, 10),
-              username: parsedUser,
-              password: parsedPassword,
-              database: parsedDatabase,
-              entities: [Admin, Post, Page, Message, Setting],
-              synchronize: true,
-              logging: configService.get('NODE_ENV') === 'development',
-              ssl: {
-                rejectUnauthorized: false,
-              },
-              retryAttempts: 10,
-              retryDelay: 3000,
-              connectTimeoutMS: 10000,
-            };
-            
-            console.log('📊 Configuration PostgreSQL (depuis DATABASE_URL):');
-            console.log(`   Host: ${pgHost}`);
-            console.log(`   Port: ${config.port}`);
-            console.log(`   Database: ${parsedDatabase}`);
-            console.log(`   Username: ${parsedUser}`);
-            
-            return config as any;
+            if (isInvalidDbUrlHost) {
+              console.warn('⚠️  DATABASE_URL pointe vers le service web (web.railway.internal), pas PostgreSQL !');
+              console.warn('⚠️  DATABASE_URL Host: ' + parsedHost);
+              console.warn('⚠️  Vérifiez que la DATABASE_URL pointe vers le service PostgreSQL, pas le service web');
+              console.warn('⚠️  Utilisation de SQLite en fallback');
+              // Ne pas retourner, continuer vers le fallback SQLite
+            } else {
+              console.log('📊 DATABASE_URL détectée, parsing...');
+              
+              const config = {
+                type: 'postgres' as const,
+                host: parsedHost,
+                port: parseInt(parsedPort, 10),
+                username: parsedUser,
+                password: parsedPassword,
+                database: parsedDatabase,
+                entities: [Admin, Post, Page, Message, Setting],
+                synchronize: true,
+                logging: configService.get('NODE_ENV') === 'development',
+                ssl: {
+                  rejectUnauthorized: false,
+                },
+                retryAttempts: 10,
+                retryDelay: 3000,
+                connectTimeoutMS: 10000,
+              };
+              
+              console.log('📊 Configuration PostgreSQL (depuis DATABASE_URL):');
+              console.log(`   Host: ${parsedHost}`);
+              console.log(`   Port: ${config.port}`);
+              console.log(`   Database: ${parsedDatabase}`);
+              console.log(`   Username: ${parsedUser}`);
+              
+              return config as any;
+            }
           } catch (error) {
             console.error('❌ Erreur lors du parsing de DATABASE_URL:', error);
           }
