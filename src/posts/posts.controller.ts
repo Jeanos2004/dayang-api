@@ -77,14 +77,17 @@ export class PostsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Créer une publication (Admin)' })
+  @ApiOperation({
+    summary: 'Créer une publication (Admin)',
+    description: 'Créer une nouvelle publication. Seul le champ "image" est obligatoire, tous les autres champs (titres, contenus, statut, etc.) sont optionnels.',
+  })
   @ApiResponse({
     status: 201,
     description: 'Publication créée avec succès',
     type: PostResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Non autorisé - Token JWT requis' })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 400, description: 'Données invalides - Le champ "image" est obligatoire' })
   async create(@Body() createPostDto: CreatePostDto) {
     return this.postsService.create(createPostDto);
   }
