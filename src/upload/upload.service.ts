@@ -19,22 +19,53 @@ export class UploadService {
   ) {
 
     // Configuration Cloudinary
-    // Essayer ConfigService d'abord, puis process.env en fallback (pour Railway)
-    const cloudName = 
-      this.configService.get('CLOUDINARY_CLOUD_NAME') || 
-      process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = 
-      this.configService.get('CLOUDINARY_API_KEY') || 
-      process.env.CLOUDINARY_API_KEY;
-    const apiSecret = 
-      this.configService.get('CLOUDINARY_API_SECRET') || 
-      process.env.CLOUDINARY_API_SECRET;
+    // Support de CLOUDINARY_URL (format: cloudinary://api_key:api_secret@cloud_name)
+    // OU des variables séparées (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)
+    const cloudinaryUrl = 
+      this.configService.get('CLOUDINARY_URL') || 
+      process.env.CLOUDINARY_URL;
+
+    let cloudName: string | undefined;
+    let apiKey: string | undefined;
+    let apiSecret: string | undefined;
+
+    if (cloudinaryUrl) {
+      // Parser CLOUDINARY_URL: cloudinary://api_key:api_secret@cloud_name
+      try {
+        const match = cloudinaryUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)/);
+        if (match && match.length === 4) {
+          apiKey = match[1];
+          apiSecret = match[2];
+          cloudName = match[3];
+          console.log('✅ CLOUDINARY_URL détectée et parsée');
+        } else {
+          console.warn('⚠️  Format CLOUDINARY_URL invalide. Format attendu: cloudinary://api_key:api_secret@cloud_name');
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors du parsing de CLOUDINARY_URL:', error);
+      }
+    } else {
+      // Essayer les variables séparées
+      cloudName = 
+        this.configService.get('CLOUDINARY_CLOUD_NAME') || 
+        process.env.CLOUDINARY_CLOUD_NAME;
+      apiKey = 
+        this.configService.get('CLOUDINARY_API_KEY') || 
+        process.env.CLOUDINARY_API_KEY;
+      apiSecret = 
+        this.configService.get('CLOUDINARY_API_SECRET') || 
+        process.env.CLOUDINARY_API_SECRET;
+    }
 
     // Debug: Afficher les valeurs (sans exposer les secrets)
     console.log('🔍 Configuration Cloudinary:');
-    console.log(`   CLOUDINARY_CLOUD_NAME: ${cloudName ? `${cloudName.substring(0, 4)}...` : 'NON DÉFINI'}`);
-    console.log(`   CLOUDINARY_API_KEY: ${apiKey ? `${apiKey.substring(0, 4)}...` : 'NON DÉFINI'}`);
-    console.log(`   CLOUDINARY_API_SECRET: ${apiSecret ? 'DÉFINI (masqué)' : 'NON DÉFINI'}`);
+    if (cloudinaryUrl) {
+      console.log(`   CLOUDINARY_URL: DÉFINIE (format: cloudinary://***:***@${cloudName})`);
+    } else {
+      console.log(`   CLOUDINARY_CLOUD_NAME: ${cloudName ? `${cloudName.substring(0, 4)}...` : 'NON DÉFINI'}`);
+      console.log(`   CLOUDINARY_API_KEY: ${apiKey ? `${apiKey.substring(0, 4)}...` : 'NON DÉFINI'}`);
+      console.log(`   CLOUDINARY_API_SECRET: ${apiSecret ? 'DÉFINI (masqué)' : 'NON DÉFINI'}`);
+    }
 
     this.useCloudinary = !!(cloudName && apiKey && apiSecret);
 
@@ -46,7 +77,7 @@ export class UploadService {
       });
       console.log('✅ Cloudinary configuré pour le stockage des médias');
       console.log(`   Cloud Name: ${cloudName}`);
-      console.log(`   API Key: ${apiKey.substring(0, 4)}...`);
+      console.log(`   API Key: ${apiKey ? apiKey.substring(0, 4) + '...' : 'N/A'}`);
     } else {
       // Fallback sur système de fichiers local
       const uploadDest = this.configService.get('UPLOAD_DEST', './uploads');
