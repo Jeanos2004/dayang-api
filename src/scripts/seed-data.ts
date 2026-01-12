@@ -166,7 +166,7 @@ async function seedData() {
     }
   }
 
-  // Seed Messages
+  // Seed Messages (avec téléphone)
   const messageRepository = dataSource.getRepository(Message);
   const existingMessages = await messageRepository.count();
 
@@ -175,18 +175,21 @@ async function seedData() {
       {
         name: 'Jean Dupont',
         email: 'jean.dupont@example.com',
+        telephone: '+33 6 12 34 56 78',
         message: 'Bonjour, je souhaiterais obtenir des informations sur vos tarifs pour un envoi de 50kg de Chine vers la France. Merci.',
         is_read: false,
       },
       {
         name: 'Maria Garcia',
         email: 'maria.garcia@example.com',
+        telephone: '+34 612 345 678',
         message: 'Hola, necesito información sobre el transporte de mercancías desde España a Camerún. ¿Cuáles son los tiempos de entrega?',
         is_read: true,
       },
       {
         name: 'John Smith',
         email: 'john.smith@example.com',
+        telephone: null, // Exemple de message sans téléphone
         message: 'Hello, I would like to know if you offer insurance for valuable goods transport from China to UK.',
         is_read: false,
       },

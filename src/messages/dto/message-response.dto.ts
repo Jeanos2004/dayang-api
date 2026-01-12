@@ -10,6 +10,13 @@ export class MessageResponseDto {
   @ApiProperty({ example: 'john@example.com' })
   email: string;
 
+  @ApiProperty({
+    example: '+33 6 12 34 56 78',
+    nullable: true,
+    description: 'Numéro de téléphone (optionnel)',
+  })
+  telephone: string | null;
+
   @ApiProperty({ example: 'Bonjour, je souhaite obtenir des informations sur vos services...' })
   message: string;
 

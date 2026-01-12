@@ -53,6 +53,22 @@ export class MessagesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('messages/:id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Détails d\'un message (Admin)' })
+  @ApiParam({ name: 'id', description: 'ID du message (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Détails du message de contact',
+    type: MessageResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Message non trouvé' })
+  @ApiResponse({ status: 401, description: 'Non autorisé - Token JWT requis' })
+  async findOne(@Param('id') id: string) {
+    return this.messagesService.findOne(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('messages/:id/read')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Marquer un message comme lu (Admin)' })

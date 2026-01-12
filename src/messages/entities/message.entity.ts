@@ -10,6 +10,9 @@ export class Message extends BaseEntity {
   @Column()
   email: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  telephone: string | null;
+
   @Column('text')
   message: string;
 
