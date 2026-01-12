@@ -19,9 +19,22 @@ export class UploadService {
   ) {
 
     // Configuration Cloudinary
-    const cloudName = this.configService.get('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get('CLOUDINARY_API_SECRET');
+    // Essayer ConfigService d'abord, puis process.env en fallback (pour Railway)
+    const cloudName = 
+      this.configService.get('CLOUDINARY_CLOUD_NAME') || 
+      process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = 
+      this.configService.get('CLOUDINARY_API_KEY') || 
+      process.env.CLOUDINARY_API_KEY;
+    const apiSecret = 
+      this.configService.get('CLOUDINARY_API_SECRET') || 
+      process.env.CLOUDINARY_API_SECRET;
+
+    // Debug: Afficher les valeurs (sans exposer les secrets)
+    console.log('🔍 Configuration Cloudinary:');
+    console.log(`   CLOUDINARY_CLOUD_NAME: ${cloudName ? `${cloudName.substring(0, 4)}...` : 'NON DÉFINI'}`);
+    console.log(`   CLOUDINARY_API_KEY: ${apiKey ? `${apiKey.substring(0, 4)}...` : 'NON DÉFINI'}`);
+    console.log(`   CLOUDINARY_API_SECRET: ${apiSecret ? 'DÉFINI (masqué)' : 'NON DÉFINI'}`);
 
     this.useCloudinary = !!(cloudName && apiKey && apiSecret);
 
@@ -80,7 +93,8 @@ export class UploadService {
       return this.uploadToCloudinary(file, filename);
     } else {
       // Upload local (fallback)
-      console.log(`🔄 Utilisation du stockage local pour l'upload`);
+      console.log(`⚠️  Utilisation du stockage local pour l'upload (Cloudinary non configuré)`);
+      console.log(`   Vérifiez que CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY et CLOUDINARY_API_SECRET sont définis`);
       return this.uploadLocal(file, filename);
     }
   }
