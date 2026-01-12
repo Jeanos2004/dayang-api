@@ -42,13 +42,37 @@ import { Setting } from './settings/entities/setting.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'better-sqlite3',
-        database: configService.get('DB_DATABASE', 'database.sqlite'),
-        entities: [Admin, Post, Page, Message, Setting],
-        synchronize: true, // Active en production pour créer les tables automatiquement
-        logging: configService.get('NODE_ENV') === 'development',
-      }),
+      useFactory: (configService: ConfigService) => {
+        // Détecter si on utilise PostgreSQL (Railway) ou SQLite (local)
+        const pgHost = configService.get('PGHOST');
+        
+        if (pgHost) {
+          // PostgreSQL (production sur Railway)
+          return {
+            type: 'postgres',
+            host: pgHost,
+            port: configService.get('PGPORT', 5432),
+            username: configService.get('PGUSER'),
+            password: configService.get('PGPASSWORD'),
+            database: configService.get('PGDATABASE'),
+            entities: [Admin, Post, Page, Message, Setting],
+            synchronize: true,
+            logging: configService.get('NODE_ENV') === 'development',
+            ssl: {
+              rejectUnauthorized: false, // Nécessaire pour Railway PostgreSQL
+            },
+          };
+        } else {
+          // SQLite (développement local)
+          return {
+            type: 'better-sqlite3',
+            database: configService.get('DB_DATABASE', 'database.sqlite'),
+            entities: [Admin, Post, Page, Message, Setting],
+            synchronize: true,
+            logging: configService.get('NODE_ENV') === 'development',
+          };
+        }
+      },
       inject: [ConfigService],
     }),
     AuthModule,

@@ -14,12 +14,37 @@ async function initializeDatabase(app: any) {
   const configService = app.get(ConfigService);
   
   try {
-    const dataSource = new DataSource({
-      type: 'better-sqlite3',
-      database: configService.get('DB_DATABASE', 'database.sqlite'),
-      entities: [Admin, Post, Page, Message, Setting],
-      synchronize: true,
-    });
+    // Détecter si on utilise PostgreSQL (Railway) ou SQLite (local)
+    const pgHost = configService.get('PGHOST');
+    
+    let dataSource: DataSource;
+    
+    if (pgHost) {
+      // PostgreSQL (production sur Railway)
+      dataSource = new DataSource({
+        type: 'postgres',
+        host: pgHost,
+        port: configService.get('PGPORT', 5432),
+        username: configService.get('PGUSER'),
+        password: configService.get('PGPASSWORD'),
+        database: configService.get('PGDATABASE'),
+        entities: [Admin, Post, Page, Message, Setting],
+        synchronize: true,
+        ssl: {
+          rejectUnauthorized: false,
+        },
+      });
+      console.log('📊 Utilisation de PostgreSQL');
+    } else {
+      // SQLite (développement local)
+      dataSource = new DataSource({
+        type: 'better-sqlite3',
+        database: configService.get('DB_DATABASE', 'database.sqlite'),
+        entities: [Admin, Post, Page, Message, Setting],
+        synchronize: true,
+      });
+      console.log('📊 Utilisation de SQLite (local)');
+    }
 
     await dataSource.initialize();
     console.log('✅ Base de données initialisée');

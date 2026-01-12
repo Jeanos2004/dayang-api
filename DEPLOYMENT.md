@@ -312,6 +312,21 @@ PGDATABASE
 - Considérer PostgreSQL pour production (plus fiable)
 - Vérifier les logs pour voir les erreurs SQL
 
+### ⚠️ Base de données SQLite perdue à chaque déploiement
+
+**Problème :** Les données SQLite sont perdues à chaque redéploiement sur Railway.
+
+**Cause :** Le système de fichiers est éphémère sur Railway. Le fichier `database.sqlite` est recréé à chaque déploiement.
+
+**Solutions :**
+1. **Utiliser PostgreSQL (Recommandé - Gratuit)** : Voir `RAILWAY_DATABASE.md` pour les instructions
+2. **Accepter la perte de données** : Acceptable pour le développement (les tables et l'admin sont recréés automatiquement)
+
+**Note :** L'application recrée automatiquement :
+- ✅ Les tables (grâce à `synchronize: true`)
+- ✅ L'admin par défaut (grâce à `initializeDatabase`)
+- ❌ Mais **TOUTES les autres données** sont perdues (posts, pages, messages, etc.)
+
 ### Erreur 404
 - Vérifier que le préfixe `/api` est bien configuré
 - Vérifier que les routes sont bien exposées

@@ -12,12 +12,32 @@ dotenv.config();
 async function initDatabase() {
   const configService = new ConfigService();
 
-  const dataSource = new DataSource({
-    type: 'better-sqlite3',
-    database: configService.get('DB_DATABASE', 'database.sqlite'),
-    entities: [Admin, Post, Page, Message, Setting],
-    synchronize: true, // Créer les tables si elles n'existent pas
-  });
+  // Détecter PostgreSQL ou SQLite
+  const pgHost = configService.get('PGHOST');
+  let dataSource: DataSource;
+  
+  if (pgHost) {
+    dataSource = new DataSource({
+      type: 'postgres',
+      host: pgHost,
+      port: configService.get('PGPORT', 5432),
+      username: configService.get('PGUSER'),
+      password: configService.get('PGPASSWORD'),
+      database: configService.get('PGDATABASE'),
+      entities: [Admin, Post, Page, Message, Setting],
+      synchronize: true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
+  } else {
+    dataSource = new DataSource({
+      type: 'better-sqlite3',
+      database: configService.get('DB_DATABASE', 'database.sqlite'),
+      entities: [Admin, Post, Page, Message, Setting],
+      synchronize: true,
+    });
+  }
 
   try {
     await dataSource.initialize();
