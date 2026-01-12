@@ -43,21 +43,68 @@ import { Setting } from './settings/entities/setting.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Détecter si on utilise PostgreSQL (Railway) ou SQLite (local)
-        const pgHost = configService.get('PGHOST');
+        // Support de DATABASE_URL (Railway utilise parfois ce format)
+        const databaseUrl = configService.get('DATABASE_URL') || process.env.DATABASE_URL;
+        
+        // Support des variables PostgreSQL séparées
+        let pgHost = configService.get('PGHOST');
         const pgUser = configService.get('PGUSER');
         const pgPassword = configService.get('PGPASSWORD');
         const pgDatabase = configService.get('PGDATABASE');
+        const pgPort = configService.get('PGPORT', '5432');
         
-        // Vérifier que TOUTES les variables PostgreSQL sont présentes
+        // Parser DATABASE_URL si disponible (format: postgresql://user:password@host:port/database)
+        if (databaseUrl && databaseUrl.startsWith('postgres')) {
+          try {
+            const url = new URL(databaseUrl);
+            pgHost = url.hostname;
+            const parsedUser = url.username;
+            const parsedPassword = url.password;
+            const parsedPort = url.port || '5432';
+            const parsedDatabase = url.pathname.slice(1); // Enlever le / au début
+            
+            console.log('📊 DATABASE_URL détectée, parsing...');
+            
+            const config = {
+              type: 'postgres' as const,
+              host: pgHost,
+              port: parseInt(parsedPort, 10),
+              username: parsedUser,
+              password: parsedPassword,
+              database: parsedDatabase,
+              entities: [Admin, Post, Page, Message, Setting],
+              synchronize: true,
+              logging: configService.get('NODE_ENV') === 'development',
+              ssl: {
+                rejectUnauthorized: false,
+              },
+              retryAttempts: 10,
+              retryDelay: 3000,
+              connectTimeoutMS: 10000,
+            };
+            
+            console.log('📊 Configuration PostgreSQL (depuis DATABASE_URL):');
+            console.log(`   Host: ${pgHost}`);
+            console.log(`   Port: ${config.port}`);
+            console.log(`   Database: ${parsedDatabase}`);
+            console.log(`   Username: ${parsedUser}`);
+            
+            return config as any;
+          } catch (error) {
+            console.error('❌ Erreur lors du parsing de DATABASE_URL:', error);
+          }
+        }
+        
+        // Vérifier que TOUTES les variables PostgreSQL sont présentes ET que le host n'est pas le service web lui-même
         const hasAllPgVars = !!(pgHost && pgUser && pgPassword && pgDatabase);
+        const isInvalidHost = pgHost && (pgHost.includes('web.railway.internal') || pgHost.includes('localhost'));
         
-        if (hasAllPgVars) {
+        if (hasAllPgVars && !isInvalidHost) {
           // PostgreSQL (production sur Railway)
           const config = {
             type: 'postgres' as const,
             host: pgHost,
-            port: parseInt(configService.get('PGPORT', '5432'), 10),
+            port: parseInt(pgPort, 10),
             username: pgUser,
             password: pgPassword,
             database: pgDatabase,
@@ -78,9 +125,12 @@ import { Setting } from './settings/entities/setting.entity';
           console.log(`   Port: ${config.port}`);
           console.log(`   Database: ${pgDatabase}`);
           console.log(`   Username: ${pgUser}`);
-          console.log(`   ⚠️  Si vous voyez ECONNREFUSED, vérifiez que PostgreSQL est démarré et lié au service`);
           
           return config as any;
+        } else if (isInvalidHost) {
+          console.warn('⚠️  PGHOST pointe vers le service web (web.railway.internal), pas PostgreSQL !');
+          console.warn('⚠️  Vérifiez que PostgreSQL est correctement lié au service web dans Railway');
+          console.warn('⚠️  Utilisation de SQLite en fallback');
         } else {
           // SQLite (développement local ou PostgreSQL non configuré)
           console.log('📊 Configuration SQLite (fallback)');
