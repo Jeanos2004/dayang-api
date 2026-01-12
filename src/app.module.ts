@@ -99,7 +99,21 @@ import { Setting } from './settings/entities/setting.entity';
         const hasAllPgVars = !!(pgHost && pgUser && pgPassword && pgDatabase);
         const isInvalidHost = pgHost && (pgHost.includes('web.railway.internal') || pgHost.includes('localhost'));
         
-        if (hasAllPgVars && !isInvalidHost) {
+        // Détecter le host invalide EN PREMIER
+        if (isInvalidHost) {
+          console.warn('⚠️  PGHOST pointe vers le service web (web.railway.internal), pas PostgreSQL !');
+          console.warn('⚠️  Vérifiez que PostgreSQL est correctement lié au service web dans Railway');
+          console.warn('⚠️  Utilisation de SQLite en fallback (les données seront perdues à chaque déploiement)');
+          console.warn('⚠️  Pour utiliser PostgreSQL, utilisez DATABASE_URL ou vérifiez que PostgreSQL est lié correctement');
+          // Fallback vers SQLite
+          return {
+            type: 'better-sqlite3' as const,
+            database: configService.get('DB_DATABASE', 'database.sqlite'),
+            entities: [Admin, Post, Page, Message, Setting],
+            synchronize: true,
+            logging: configService.get('NODE_ENV') === 'development',
+          };
+        } else if (hasAllPgVars) {
           // PostgreSQL (production sur Railway)
           const config = {
             type: 'postgres' as const,
@@ -127,10 +141,6 @@ import { Setting } from './settings/entities/setting.entity';
           console.log(`   Username: ${pgUser}`);
           
           return config as any;
-        } else if (isInvalidHost) {
-          console.warn('⚠️  PGHOST pointe vers le service web (web.railway.internal), pas PostgreSQL !');
-          console.warn('⚠️  Vérifiez que PostgreSQL est correctement lié au service web dans Railway');
-          console.warn('⚠️  Utilisation de SQLite en fallback');
         } else {
           // SQLite (développement local ou PostgreSQL non configuré)
           console.log('📊 Configuration SQLite (fallback)');
