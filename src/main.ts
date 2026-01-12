@@ -70,13 +70,16 @@ async function initializeDatabase(app: any) {
 
     await dataSource.destroy();
   } catch (error) {
-    console.error('⚠️  Erreur lors de l\'initialisation de la base de données:', error.message);
+    console.error('⚠️  Erreur lors de l\'initialisation de la base de données:', error);
+    console.error('   Détails:', error.message);
+    console.error('   Stack:', error.stack);
     // Ne pas bloquer le démarrage, TypeORM va gérer la synchronisation
   }
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  try {
+    const app = await NestFactory.create(AppModule);
 
   // CORS
   app.enableCors({
@@ -130,9 +133,16 @@ async function bootstrap() {
   // Initialiser la base de données au démarrage
   await initializeDatabase(app);
 
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}/api`);
-  console.log(`📚 Documentation Swagger: http://localhost:${port}/api/docs`);
+    const port = process.env.PORT || 3000;
+    await app.listen(port);
+    console.log(`🚀 Application is running on: http://localhost:${port}/api`);
+    console.log(`📚 Documentation Swagger: http://localhost:${port}/api/docs`);
+  } catch (error) {
+    console.error('❌ Erreur fatale lors du démarrage de l\'application:', error);
+    process.exit(1);
+  }
 }
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('❌ Erreur non gérée:', error);
+  process.exit(1);
+});

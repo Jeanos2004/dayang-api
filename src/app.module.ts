@@ -45,27 +45,55 @@ import { Setting } from './settings/entities/setting.entity';
       useFactory: (configService: ConfigService) => {
         // Détecter si on utilise PostgreSQL (Railway) ou SQLite (local)
         const pgHost = configService.get('PGHOST');
+        const pgUser = configService.get('PGUSER');
+        const pgPassword = configService.get('PGPASSWORD');
+        const pgDatabase = configService.get('PGDATABASE');
         
-        if (pgHost) {
+        // Vérifier que TOUTES les variables PostgreSQL sont présentes
+        const hasAllPgVars = !!(pgHost && pgUser && pgPassword && pgDatabase);
+        
+        if (hasAllPgVars) {
           // PostgreSQL (production sur Railway)
-          return {
-            type: 'postgres',
+          const config = {
+            type: 'postgres' as const,
             host: pgHost,
-            port: configService.get('PGPORT', 5432),
-            username: configService.get('PGUSER'),
-            password: configService.get('PGPASSWORD'),
-            database: configService.get('PGDATABASE'),
+            port: parseInt(configService.get('PGPORT', '5432'), 10),
+            username: pgUser,
+            password: pgPassword,
+            database: pgDatabase,
             entities: [Admin, Post, Page, Message, Setting],
             synchronize: true,
             logging: configService.get('NODE_ENV') === 'development',
             ssl: {
               rejectUnauthorized: false, // Nécessaire pour Railway PostgreSQL
             },
+            retryAttempts: 10,
+            retryDelay: 3000,
+            connectTimeoutMS: 10000,
           };
+          
+          // Log de debug (sans exposer les secrets)
+          console.log('📊 Configuration PostgreSQL détectée:');
+          console.log(`   Host: ${pgHost}`);
+          console.log(`   Port: ${config.port}`);
+          console.log(`   Database: ${pgDatabase}`);
+          console.log(`   Username: ${pgUser}`);
+          console.log(`   ⚠️  Si vous voyez ECONNREFUSED, vérifiez que PostgreSQL est démarré et lié au service`);
+          
+          return config as any;
         } else {
-          // SQLite (développement local)
+          // SQLite (développement local ou PostgreSQL non configuré)
+          console.log('📊 Configuration SQLite (fallback)');
+          if (pgHost) {
+            console.log('   ⚠️  PostgreSQL détecté mais variables incomplètes. Variables manquantes:');
+            if (!pgHost) console.log('      - PGHOST');
+            if (!pgUser) console.log('      - PGUSER');
+            if (!pgPassword) console.log('      - PGPASSWORD');
+            if (!pgDatabase) console.log('      - PGDATABASE');
+            console.log('   ℹ️  Utilisation de SQLite temporairement');
+          }
           return {
-            type: 'better-sqlite3',
+            type: 'better-sqlite3' as const,
             database: configService.get('DB_DATABASE', 'database.sqlite'),
             entities: [Admin, Post, Page, Message, Setting],
             synchronize: true,
