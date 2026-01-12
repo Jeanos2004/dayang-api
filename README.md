@@ -64,7 +64,9 @@ API REST complète permettant la gestion dynamique d'un site vitrine multilingue
 ### 📸 Upload d'images
 - Upload sécurisé d'images
 - Validation des types et tailles
-- Stockage local ou cloud
+- **Stockage Cloudinary** (recommandé pour production - gratuit jusqu'à 25GB)
+- Fallback sur stockage local si Cloudinary non configuré
+- URLs HTTPS automatiques avec Cloudinary
 
 ---
 
@@ -76,7 +78,7 @@ API REST complète permettant la gestion dynamique d'un site vitrine multilingue
 - **ORM** : TypeORM
 - **Authentification** : JWT (Passport)
 - **Validation** : class-validator, class-transformer
-- **Upload** : Multer
+- **Upload** : Multer + Cloudinary (optionnel)
 - **Documentation** : Swagger/OpenAPI
 
 ---
@@ -142,9 +144,16 @@ ADMIN_PASSWORD=changeme123
 PORT=3000
 NODE_ENV=development
 
-# Upload
+# Upload (Stockage local - fallback si Cloudinary non configuré)
 UPLOAD_DEST=./uploads
 MAX_FILE_SIZE=5242880
+
+# Cloudinary (Recommandé pour production - gratuit jusqu'à 25GB)
+# Créer un compte sur https://cloudinary.com
+# Si configuré, les fichiers seront uploadés sur Cloudinary au lieu du stockage local
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
 ---

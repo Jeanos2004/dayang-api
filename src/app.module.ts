@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -19,6 +21,24 @@ import { Setting } from './settings/entities/setting.entity';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    // Servir les fichiers statiques du dossier uploads
+    ServeStaticModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        const uploadPath = configService.get('UPLOAD_DEST', './uploads');
+        return [
+          {
+            rootPath: join(process.cwd(), uploadPath),
+            serveRoot: '/uploads',
+            serveStaticOptions: {
+              index: false,
+              dotfiles: 'deny',
+            },
+          },
+        ];
+      },
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

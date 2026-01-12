@@ -1,15 +1,39 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Stream } from 'stream';
 
 @Injectable()
 export class UploadService {
   private uploadPath: string;
+  private useCloudinary: boolean;
 
   constructor(private configService: ConfigService) {
-    this.uploadPath = this.configService.get('UPLOAD_DEST', './uploads');
-    this.ensureUploadDirectoryExists();
+    // Configuration Cloudinary
+    const cloudName = this.configService.get('CLOUDINARY_CLOUD_NAME');
+    const apiKey = this.configService.get('CLOUDINARY_API_KEY');
+    const apiSecret = this.configService.get('CLOUDINARY_API_SECRET');
+
+    this.useCloudinary = !!(cloudName && apiKey && apiSecret);
+
+    if (this.useCloudinary) {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+      });
+      console.log('✅ Cloudinary configuré pour le stockage des médias');
+    } else {
+      // Fallback sur système de fichiers local
+      const uploadDest = this.configService.get('UPLOAD_DEST', './uploads');
+      this.uploadPath = path.isAbsolute(uploadDest)
+        ? uploadDest
+        : path.join(process.cwd(), uploadDest);
+      this.ensureUploadDirectoryExists();
+      console.log('⚠️  Cloudinary non configuré, utilisation du stockage local');
+    }
   }
 
   private ensureUploadDirectoryExists() {
@@ -39,13 +63,59 @@ export class UploadService {
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
     const extension = path.extname(file.originalname);
-    const filename = `${timestamp}-${randomString}${extension}`;
+    const filename = `dayang-${timestamp}-${randomString}${extension}`;
+
+    if (this.useCloudinary) {
+      // Upload vers Cloudinary
+      return this.uploadToCloudinary(file, filename);
+    } else {
+      // Upload local (fallback)
+      return this.uploadLocal(file, filename);
+    }
+  }
+
+  private async uploadToCloudinary(
+    file: Express.Multer.File,
+    filename: string,
+  ): Promise<{ url: string; filename: string }> {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'dayang-transport',
+          public_id: filename.replace(/\.[^/.]+$/, ''), // Enlever l'extension
+          resource_type: 'image',
+          transformation: [
+            { quality: 'auto' },
+            { fetch_format: 'auto' },
+          ],
+        },
+        (error, result) => {
+          if (error) {
+            reject(new BadRequestException(`Erreur lors de l'upload Cloudinary: ${error.message}`));
+          } else if (!result) {
+            reject(new BadRequestException('Erreur lors de l\'upload Cloudinary: résultat vide'));
+          } else {
+            resolve({
+              url: result.secure_url, // URL HTTPS
+              filename: result.public_id,
+            });
+          }
+        },
+      );
+
+      // Convertir le buffer en stream
+      const bufferStream = new Stream.PassThrough();
+      bufferStream.end(file.buffer);
+      bufferStream.pipe(uploadStream);
+    });
+  }
+
+  private async uploadLocal(
+    file: Express.Multer.File,
+    filename: string,
+  ): Promise<{ url: string; filename: string }> {
     const filepath = path.join(this.uploadPath, filename);
-
-    // Sauvegarder le fichier
     fs.writeFileSync(filepath, file.buffer);
-
-    // Retourner l'URL relative
     const url = `/uploads/${filename}`;
     return { url, filename };
   }

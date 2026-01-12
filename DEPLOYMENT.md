@@ -30,6 +30,12 @@ JWT_EXPIRES_IN=7d
 DB_DATABASE=database.sqlite
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=votre-mot-de-passe-securise
+
+# Cloudinary (Recommandé pour les médias - gratuit jusqu'à 25GB)
+# Créer un compte sur https://cloudinary.com
+CLOUDINARY_CLOUD_NAME=votre-cloud-name
+CLOUDINARY_API_KEY=votre-api-key
+CLOUDINARY_API_SECRET=votre-api-secret
 ```
 
 ---
@@ -316,6 +322,90 @@ PGDATABASE
 - Vérifier que `ADMIN_EMAIL` et `ADMIN_PASSWORD` sont bien définis dans Railway
 - Vérifier les logs pour voir si l'admin a été créé
 - Si nécessaire, redémarrer le service Railway
+
+### Erreur 404 sur les fichiers uploadés (`/uploads/...`)
+
+**Problème :** Les fichiers uploadés ne sont pas accessibles ou disparaissent après un redéploiement.
+
+**Cause :** Sur Railway (et la plupart des plateformes cloud), les fichiers locaux ne persistent pas entre les redéploiements. Le système de fichiers est éphémère.
+
+**✅ Solution : Cloudinary (Déjà intégré !)**
+
+L'application utilise maintenant **Cloudinary** par défaut si configuré. C'est la solution recommandée.
+
+#### Configuration Cloudinary sur Railway
+
+1. **Créer un compte Cloudinary** (gratuit) :
+   - Aller sur [cloudinary.com](https://cloudinary.com)
+   - Créer un compte gratuit (25GB de stockage gratuit)
+   - Une fois connecté, aller dans le Dashboard
+
+2. **Récupérer les credentials** :
+   - Dans le Dashboard, vous verrez :
+     - **Cloud Name** (ex: `dxyz1234`)
+     - **API Key** (ex: `123456789012345`)
+     - **API Secret** (ex: `abcdefghijklmnopqrstuvwxyz`)
+
+3. **Ajouter les variables sur Railway** :
+   - Ouvrir votre projet Railway
+   - Onglet "Variables"
+   - Ajouter ces 3 variables :
+     ```
+     CLOUDINARY_CLOUD_NAME=votre-cloud-name
+     CLOUDINARY_API_KEY=votre-api-key
+     CLOUDINARY_API_SECRET=votre-api-secret
+     ```
+   - Redémarrer le service
+
+4. **Tester** :
+   - Uploader une image via `POST /api/upload`
+   - L'URL retournée sera une URL Cloudinary HTTPS (ex: `https://res.cloudinary.com/...`)
+   - Cette URL persiste même après redéploiement !
+
+#### ⚠️ Fallback : Stockage local (si Cloudinary non configuré)
+
+Si Cloudinary n'est pas configuré, l'application utilise le stockage local :
+- ✅ Fonctionne pour les tests et démos
+- ❌ Les fichiers disparaissent après redéploiement
+- Les URLs retournées (`/uploads/...`) fonctionnent uniquement si le fichier existe encore
+
+---
+
+## 📁 Gestion des Fichiers Uploadés
+
+### ✅ Configuration Cloudinary (Recommandé - Déjà intégré !)
+
+L'application utilise **Cloudinary** par défaut si les variables d'environnement sont configurées.
+
+**Variables d'environnement :**
+```env
+# Cloudinary (Recommandé pour production)
+CLOUDINARY_CLOUD_NAME=votre-cloud-name
+CLOUDINARY_API_KEY=votre-api-key
+CLOUDINARY_API_SECRET=votre-api-secret
+
+# Upload (Fallback si Cloudinary non configuré)
+UPLOAD_DEST=./uploads  # Chemin relatif ou absolu
+MAX_FILE_SIZE=5242880  # 5MB par défaut
+```
+
+**Endpoints :**
+- `POST /api/upload` - Uploader une image (Admin uniquement)
+  - Retourne une URL Cloudinary HTTPS si configuré
+  - Retourne une URL locale `/uploads/...` si Cloudinary non configuré
+
+**Avantages de Cloudinary :**
+- ✅ Persistance garantie (fichiers jamais perdus)
+- ✅ CDN intégré (chargement rapide partout dans le monde)
+- ✅ Transformations d'images automatiques (redimensionnement, compression)
+- ✅ URLs HTTPS sécurisées
+- ✅ Gratuit jusqu'à 25GB
+- ✅ Pas de perte de fichiers lors des redéploiements
+- ✅ Optimisation automatique des images (qualité auto, format auto)
+
+**Comment ça fonctionne :**
+1. Si Cloudinary est configuré → Upload vers Cloudinary → URL HTTPS retournée
+2. Si Cloudinary n'est pas configuré → Upload local → URL `/uploads/...` retournée (⚠️ perdue après redéploiement)
 
 ---
 
