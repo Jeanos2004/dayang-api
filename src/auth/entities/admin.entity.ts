@@ -10,6 +10,9 @@ export class Admin extends BaseEntity {
   @Column()
   password: string;
 
+  @Column({ nullable: true })
+  profile_image_url: string | null;
+
   async validatePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
   }
