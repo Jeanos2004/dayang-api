@@ -10,7 +10,7 @@ export class Admin extends BaseEntity {
   @Column()
   password: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   profile_image_url: string | null;
 
   async validatePassword(password: string): Promise<boolean> {

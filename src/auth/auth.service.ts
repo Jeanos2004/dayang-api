@@ -77,7 +77,11 @@ export class AuthService {
     
     // Retourner sans le mot de passe
     const { password, ...adminWithoutPassword } = savedAdmin;
-    return adminWithoutPassword;
+    // S'assurer que profile_image_url est null au lieu de undefined
+    return {
+      ...adminWithoutPassword,
+      profile_image_url: adminWithoutPassword.profile_image_url ?? null,
+    };
   }
 
   async findAllAdmins() {
@@ -85,8 +89,11 @@ export class AuthService {
       order: { created_at: 'DESC' },
     });
     
-    // Retourner sans les mots de passe
-    return admins.map(({ password, ...adminWithoutPassword }) => adminWithoutPassword);
+    // Retourner sans les mots de passe et s'assurer que profile_image_url est null au lieu de undefined
+    return admins.map(({ password, ...adminWithoutPassword }) => ({
+      ...adminWithoutPassword,
+      profile_image_url: adminWithoutPassword.profile_image_url ?? null,
+    }));
   }
 
   async findOneAdmin(id: string) {
@@ -99,7 +106,11 @@ export class AuthService {
     }
 
     const { password, ...adminWithoutPassword } = admin;
-    return adminWithoutPassword;
+    // S'assurer que profile_image_url est null au lieu de undefined
+    return {
+      ...adminWithoutPassword,
+      profile_image_url: adminWithoutPassword.profile_image_url ?? null,
+    };
   }
 
   async removeAdmin(id: string) {
