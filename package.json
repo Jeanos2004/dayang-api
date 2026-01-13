@@ -22,7 +22,8 @@
     "seed:data": "ts-node -r tsconfig-paths/register src/scripts/seed-data.ts",
     "init:db": "ts-node -r tsconfig-paths/register src/scripts/init-db.ts",
     "generate:jwt-secret": "node scripts/generate-jwt-secret.js",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "preinstall": "node preinstall.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

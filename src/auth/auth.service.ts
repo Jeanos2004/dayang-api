@@ -3,29 +3,21 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
-  BadRequestException,
-  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { randomBytes } from 'crypto';
 import { Admin } from './entities/admin.entity';
 import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { EmailService } from '../common/services/email.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
     private jwtService: JwtService,
-    private emailService: EmailService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -134,69 +126,30 @@ export class AuthService {
     await this.adminRepository.remove(admin);
   }
 
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+  async changePassword(adminId: string, changePasswordDto: ChangePasswordDto) {
     const admin = await this.adminRepository.findOne({
-      where: { email: forgotPasswordDto.email },
-    });
-
-    // Pour la sécurité, on ne révèle pas si l'email existe ou non
-    if (!admin) {
-      // Retourner un message générique même si l'email n'existe pas
-      return {
-        message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
-      };
-    }
-
-    // Générer un token de réinitialisation sécurisé
-    const resetToken = randomBytes(32).toString('hex');
-    const resetTokenExpires = new Date();
-    resetTokenExpires.setHours(resetTokenExpires.getHours() + 1); // Expire dans 1 heure
-
-    // Sauvegarder le token dans la base de données
-    admin.reset_password_token = resetToken;
-    admin.reset_password_expires = resetTokenExpires;
-    await this.adminRepository.save(admin);
-
-    // Envoyer l'email avec le lien de réinitialisation
-    try {
-      await this.emailService.sendPasswordResetEmail(admin.email, resetToken);
-    } catch (error) {
-      this.logger.error(`Erreur lors de l'envoi de l'email à ${admin.email}:`, error);
-      // On continue quand même, le token est sauvegardé
-      // En développement, on peut logger le token si l'email échoue
-      this.logger.warn(`Token de réinitialisation pour ${admin.email}: ${resetToken}`);
-    }
-
-    return {
-      message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
-    };
-  }
-
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const admin = await this.adminRepository.findOne({
-      where: { reset_password_token: resetPasswordDto.token },
+      where: { id: adminId },
     });
 
     if (!admin) {
-      throw new BadRequestException('Token de réinitialisation invalide ou expiré');
+      throw new NotFoundException('Administrateur non trouvé');
     }
 
-    // Vérifier si le token n'a pas expiré
-    if (!admin.reset_password_expires || admin.reset_password_expires < new Date()) {
-      throw new BadRequestException('Token de réinitialisation expiré');
+    // Vérifier que l'ancien mot de passe est correct
+    const isOldPasswordValid = await admin.validatePassword(changePasswordDto.oldPassword);
+    if (!isOldPasswordValid) {
+      throw new UnauthorizedException('Ancien mot de passe incorrect');
     }
 
     // Hash du nouveau mot de passe
-    const hashedPassword = await Admin.hashPassword(resetPasswordDto.newPassword);
+    const hashedPassword = await Admin.hashPassword(changePasswordDto.newPassword);
 
-    // Mettre à jour le mot de passe et effacer le token
+    // Mettre à jour le mot de passe
     admin.password = hashedPassword;
-    admin.reset_password_token = null;
-    admin.reset_password_expires = null;
     await this.adminRepository.save(admin);
 
     return {
-      message: 'Mot de passe réinitialisé avec succès',
+      message: 'Mot de passe modifié avec succès',
     };
   }
 }
