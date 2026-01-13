@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,13 +15,17 @@ import { LoginDto } from './dto/login.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { EmailService } from '../common/services/email.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -152,15 +157,18 @@ export class AuthService {
     admin.reset_password_expires = resetTokenExpires;
     await this.adminRepository.save(admin);
 
-    // TODO: Envoyer l'email avec le lien de réinitialisation
-    // Pour l'instant, on log le token (développement uniquement)
-    console.log(`🔑 Token de réinitialisation pour ${admin.email}: ${resetToken}`);
-    console.log(`📧 Lien: http://votre-frontend.com/reset-password?token=${resetToken}`);
+    // Envoyer l'email avec le lien de réinitialisation
+    try {
+      await this.emailService.sendPasswordResetEmail(admin.email, resetToken);
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi de l'email à ${admin.email}:`, error);
+      // On continue quand même, le token est sauvegardé
+      // En développement, on peut logger le token si l'email échoue
+      this.logger.warn(`Token de réinitialisation pour ${admin.email}: ${resetToken}`);
+    }
 
     return {
       message: 'Si cet email existe, un lien de réinitialisation a été envoyé',
-      // En développement, on peut retourner le token (à retirer en production)
-      // token: resetToken, // À retirer en production
     };
   }
 

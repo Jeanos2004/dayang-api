@@ -16,7 +16,7 @@ export class Admin extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   reset_password_token: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   reset_password_expires: Date | null;
 
   async validatePassword(password: string): Promise<boolean> {
