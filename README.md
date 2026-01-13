@@ -38,7 +38,7 @@ API REST complète permettant la gestion dynamique d'un site vitrine multilingue
 - Login admin avec JWT
 - Routes protégées pour le dashboard admin
 - Hashage sécurisé des mots de passe (bcrypt)
-- Réinitialisation de mot de passe par email
+- Changement de mot de passe (admin authentifié)
 
 ### 📰 Publications / News
 - CRUD complet des publications
@@ -156,15 +156,6 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
-# SMTP (Pour l'envoi d'emails - réinitialisation de mot de passe)
-# Si non configuré, les emails ne seront pas envoyés (mode développement)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=noreply@dayang.com
-FRONTEND_URL=http://localhost:3000
 ```
 
 ---
@@ -225,8 +216,7 @@ src/
 | Méthode | Endpoint | Description | Accès |
 |---------|----------|-------------|-------|
 | POST | `/api/auth/login` | Connexion admin | Public |
-| POST | `/api/auth/forgot-password` | Demander la réinitialisation du mot de passe | Public |
-| POST | `/api/auth/reset-password` | Réinitialiser le mot de passe avec un token | Public |
+| PATCH | `/api/auth/change-password` | Changer le mot de passe | Admin |
 | POST | `/api/admins` | Créer un administrateur | Admin |
 | GET | `/api/admins` | Liste des administrateurs | Admin |
 | GET | `/api/admins/:id` | Détails d'un administrateur | Admin |

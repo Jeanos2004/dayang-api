@@ -1,14 +1,14 @@
 import { IsString, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ResetPasswordDto {
+export class ChangePasswordDto {
   @ApiProperty({
-    description: 'Token de réinitialisation reçu par email',
-    example: 'abc123def456...',
+    description: 'Ancien mot de passe',
+    example: 'ancienMotDePasse123',
   })
   @IsString()
   @IsNotEmpty()
-  token: string;
+  oldPassword: string;
 
   @ApiProperty({
     description: 'Nouveau mot de passe',
